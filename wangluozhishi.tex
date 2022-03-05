@@ -1,0 +1,208 @@
+\documentclass[UTF8]{article}%z指定文档类型
+\usepackage[UTF8]{ctex}%显示中文
+\usepackage{graphicx}%引用图包
+\usepackage{amsfonts,amsmath,amssymb,amstext}%数学相关宏包
+\usepackage{color}
+
+\begin{document}%文章开始
+
+
+\title{网络通信}%文章题目
+\maketitle% 显示上述标题信息
+
+\section{Linux基础知识}
+
+\subsection{linux内核}
+
+内核是操作系统的核心，具有很多最基本功能，它负责管理系统的进程、内存、设备驱动程序、文件和网络系统，决定着系统的性能和稳定性。
+
+Linux 内核由如下几部分组成：内存管理、进程管理、设备驱动程序、文件系统和网络管理等。如图所示：
+
+\begin{figure}[htb!]%插入图片
+    \includegraphics[width=0.8\textwidth]{1.1-1.jpg}
+\end{figure}
+
+其中系统调用接口：SCI 层提供了某些机制执行从用户空间到内核的函数调用。
+
+\subsection{Linux 远程登录}
+
+Linux 系统中是通过 ssh 服务实现的远程登录功能，默认 ssh 服务端口号为 22。
+
+安装ssh：yum install ssh
+
+启动ssh：service sshd start
+
+登录远程服务器：ssh -p 50022 my@127.0.0.1
+
+输入密码：my@127.0.0.1:
+(-p 后面是端口，my 是服务器用户名，127.0.0.1 是服务器 ip）
+
+回车输入密码即可登录。
+
+\subsection{Linux 进程}
+
+在 Linux 系统中，能够同时运行多个进程，Linux 通过在短的时间间隔内轮流运行这些进程而实现“多任务”。这一短的时间间隔称为“时间片”，让进程轮流运行的方法称为“进程调度” ，完成调度的程序称为调度程序。
+
+Linux 中常见的进程间通讯机制有信号、管道、共享内存、信号量和套接字等。
+
+\subsubsection{相关命令}
+
+可以使用\$ps命令来查询正在运行的进程，比如\$ps -e、-o pid,-o comm,-o cmd，
+
+其中-e表示列出全部进程，-o pid,-o comm,-o cmd分别表示需要PID，COMMAND，CMD信息。
+
+三个信息的意义依次为：PID(process IDentity)是每一个进程的身份（唯一），是一个整数，进程也可以根据PID来识别其他的进程；COMMAND是这个进程的简称；CMD是进程所对应的程序以及运行时所带的参数。
+
+\subsubsection{Linux进程的产生}
+
+当计算机开机的时候，内核(kernel)只建立了一个init进程。Linux内核并不提供直接建立新进程的系统调用。其他所有进程都是init进程通过fork机制建立的。
+
+fork表示：新的进程要通过老的进程复制自身得到，它是一个系统调用。进程存活于内存中。每个进程都在内存中分配有属于自己的一片空间 (address space)。当进程fork的时候，Linux在内存中开辟出一片新的内存空间给新的进程，并将老的进程空间中的内容复制到新的空间中，此后两个进程同时运行。
+
+老进程成为新进程的父进程(parent process)，而相应的，新进程就是老的进程的子进程(child process)。一个进程除了有一个PID之外，还会有一个PPID(parent PID)来存储的父进程PID。如果我们循着PPID不断向上追溯的话，总会发现其源头是init进程。所以说，所有的进程也构成一个以init为根的树状结构。
+
+\subsubsection{Linux进程的消失}
+
+当子进程终结时，它会通知父进程，并清空自己所占据的内存，并在内核里留下自己的退出信息(exit code，如果顺利运行，为0；如果有错误或异常状况，为>0的整数)。在这个信息里，会解释该进程为什么退出。
+
+父进程在得知子进程终结时，有责任对该子进程使用wait系统调用。这个wait函数能从内核中取出子进程的退出信息，并清空该信息在内核中所占据的空间。
+
+但是，如果父进程早于子进程终结，子进程就会成为一个孤儿(orphand)进程。孤儿进程会被过继给init进程，init进程也就成了该进程的父进程。init进程负责该子进程终结时调用wait函数。
+
+注意：在Linux中，线程只是一种特殊的进程。多个线程之间可以共享内存空间和IO接口。所以，进程是Linux程序的唯一的实现方式。
+
+\subsection{Linux内存管理}
+
+了让有限的物理内存满足应用程序对内存的大需求量，Linux 采用了称为“虚拟内存”的内存管理方式。Linux 将内存划分为容易处理的“内存页”（对于大部分体系结构来说都是 4KB）。Linux 包括了管理可用内存的方式，以及物理和虚拟映射所使用的硬件机制。
+
+\subsection{Linux文件系统}
+
+Linux系统能支持多种目前流行的文件系统，如EXT2、 EXT3、 FAT、 FAT32、 VFAT和ISO9660。
+
+Linux下面的文件类型主要有：
+
+1) 普通文件：C语言元代码、SHELL脚本、二进制的可执行文件等。分为纯文本和二进制；
+
+2) 目录文件：目录，存储文件的唯一地方；
+
+3) 链接文件：指向同一个文件或目录的的文件；
+
+4) 设备文件：与系统外设相关的，通常在/dev下面。分为块设备和字符设备；
+
+5）管道(FIFO)文件: 提供进程之间通信的一种方式；
+
+6）套接字(socket) 文件： 该文件类型与网络通信有关；
+
+可参考：https://www.linuxprobe.com/linux-system-structure.html
+
+\subsection{Linux防火墙}
+
+\subsubsection{常用命令}
+
+\begin{itemize}
+    \item 启动：systemctl start firewalld
+    \item 重启：systemctl restart firewalld
+    \item 停止：systemctl stop firewalld
+    \item 重新加载：firewall-cmd --reload
+    \item 查看firewalld的运行状态：
+    
+        firewall-cmd --state
+
+    \item 取消开放https服务，即禁止https服务：
+    
+        firewall-cmd --zone=drop --remove-service=https
+
+    \item 开放22端口：
+    
+        firewall-cmd --zone=drop --add-port=22/tcp
+
+    \item 取消开放22端口：
+    
+        firewall-cmd --zone=drop --remove-port=22/tcp
+
+    \item 开放两个端口：
+    
+    firewall-cmd --zone=drop --add-port=8080-8081/tcp
+
+    \item 查询drop区域开放了哪些端口：
+    
+    firewall-cmd --zone=drop --list-ports
+
+    \item 其他常用命令：
+    
+    允许icmp协议流量，即允许ping：
+
+    firewall-cmd --zone=drop --add-protocol=icmp
+
+    取消允许icmp协议的流量，即禁ping：
+
+    firewall-cmd --zone=drop --remove-protocol=icmp
+    
+    查询drop区域开放了哪些协议：
+
+    firewall-cmd --zone=drop --list-protocols
+
+    将原本访问本机888端口的流量转发到本机22端口：
+    
+    firewall-cmd --zone=drop --add-forward-port
+    =port=888:proto=tcp:toport=22
+\end{itemize}
+
+
+\section{socket基础}
+
+\subsection{socket通信的概念}
+
+套接字，运行在计算机中的两个程序通过socket建立起一个通道，数据在通道中传输。套接字可以看成是两个网络应用程序进行通信时，各自通信连接中的端点，这是一个逻辑上的概念。它是网络环境中进程间通信的API(应用程序编程接口)（是IP地址和端口结合）。
+
+socket把复杂的TCP/IP协议族隐藏了起来，只要用好socket相关的函数，就可以完成网络通信。
+
+\subsection{socket的分类}
+
+socket提供了流（stream）和数据报（datagram）两种通信机制，即流socket和数据报socket。
+
+流socket基于TCP协议，是一个有序、可靠、双向字节流的通道，传输数据不会丢失、不会重复、顺序也不会错乱。类似于打电话。
+
+数据报socket基于UDP协议，不需要建立和维持连接，可能会丢失或错乱。UDP不是一个可靠的协议，对数据的长度有限制，但是它的速度比较高。类似于短信。
+
+在实际开发中，数据报socket的应用场景极少。
+
+\subsection{socket通信的过程}
+
+\subsubsection{服务端}
+
+\begin{itemize}
+    \item 创建服务端的socket。
+    \item 把服务端指定的用于通信的ip地址和端口绑定到socket上。
+    \item 把socket设置为监听模式，以监听用户请求。
+    \item 接受客户端的连接。
+    \item 与客户端通信，接收客户端发过来的报文后，回复处理结果。
+    \item 不断的重复上一步步，直到客户端断开连接。
+    \item 关闭socket，释放资源。
+\end{itemize}
+
+\subsubsection{客户端}
+
+\begin{itemize}
+    \item 创建客户端的socket。
+    \item 向服务器发起连接请求。
+    \item 与服务端通信，发送一个报文后等待回复，然后再发下一个报文。
+    \item 不断的重复上一步，直到全部的数据被发送完。
+    \item 关闭socket，释放资源。
+\end{itemize}
+
+
+
+
+
+
+
+
+
+\begin{itemize}
+    \item 
+    \item 
+    \item 
+\end{itemize}
+
+\end{document}%文章结束

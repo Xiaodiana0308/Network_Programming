@@ -1,0 +1,123 @@
+{
+    // Latex workshop
+    "latex-workshop.latex.tools": [
+        {
+          "name": "latexmk",
+          "command": "latexmk",
+          "args": [
+          "-synctex=1",
+          "-interaction=nonstopmode",
+          "-file-line-error",
+          "-pdf",
+          "%DOC%"
+          ]
+        },
+        {
+          "name": "xelatex",
+          "command": "xelatex",
+          "args": [
+          "-synctex=1",
+          "-interaction=nonstopmode",
+          "-file-line-error",
+          "%DOC%"
+            ]
+        },          
+        {
+          "name": "pdflatex",
+          "command": "pdflatex",
+          "args": [
+          "-synctex=1",
+          "-interaction=nonstopmode",
+          "-file-line-error",
+          "%DOC%"
+          ]
+        },
+        {
+          "name": "bibtex",
+          "command": "bibtex",
+          "args": [
+          "%DOCFILE%"
+          ]
+        }
+      ],
+  "latex-workshop.latex.recipes": [
+        {
+          "name": "xelatex",
+          "tools": [
+          "xelatex"
+                      ]
+                },
+        {
+          "name": "latexmk",
+          "tools": [
+          "latexmk"
+                      ]
+        },
+
+        {
+          "name": "xe -> bib -> xe -> xe",
+          "tools": [
+          "xelatex",
+          "bibtex",
+          "xelatex",
+          "xelatex"
+                      ]
+        },
+
+        {
+          "name": "pdflatex -> bibtex -> pdflatex*2",
+          "tools": [
+          "pdflatex",
+          "bibtex",
+          "pdflatex",
+          "pdflatex"
+                      ]
+        }
+      ],
+   //默认为vscode中tab预览
+  "latex-workshop.view.pdf.viewer": "tab",
+  "latex-workshop.latex.clean.enabled": true,
+  //保持编译后文件整理，去除不必要的后缀文件
+  "latex-workshop.latex.clean.fileTypes": [
+      "*.aux",
+      "*.bbl",
+      "*.blg",
+      "*.idx",
+      "*.ind",
+      "*.lof",
+      "*.lot",
+      "*.out",
+      "*.toc",
+      "*.acn",
+      "*.acr",
+      "*.alg",
+      "*.glg",
+      "*.glo",
+      "*.gls",
+      "*.ist",
+      "*.fls",
+      "*.log",
+      "*.fdb_latexmk"
+    ],	
+    "latex-workshop.latex.autoClean.run": "onBuilt",
+    "workbench.colorTheme": "Eva Dark",
+
+    //"latex-workshop.view.pdf.viewer": "external",
+    //若要使用外部sumatra Pdf，需反注释上面一行并且根据自己路径进行下面的修改
+    "latex-workshop.view.pdf.external.viewer.command": "C:/Users/He Xiang/AppData/Local/SumatraPDF/SumatraPDF.exe",
+   
+    "latex-workshop.view.pdf.external.viewer.args": [
+    "%PDF%"
+    ],
+    "latex-workshop.view.pdf.external.synctex.command": "C:/Users/He Xiang/AppData/Local/SumatraPDF/SumatraPDF.exe",
+    "latex-workshop.view.pdf.external.synctex.args": [
+    "-forward-search",
+    "%TEX%",
+    "%LINE%",
+    "-reuse-instance",
+    "-inverse-search",
+    "code \"D:/Microsoft VS Code/resources/app/out/cli.js\" -r -g \"%f:%l\"",
+    "%PDF%",
+    ],
+
+}
