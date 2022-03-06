@@ -172,23 +172,23 @@ socket提供了流（stream）和数据报（datagram）两种通信机制，即
 \subsubsection{服务端}
 
 \begin{itemize}
-    \item 创建服务端的socket。
-    \item 把服务端指定的用于通信的ip地址和端口绑定到socket上。
-    \item 把socket设置为监听模式，以监听用户请求。
-    \item 接受客户端的连接。
-    \item 与客户端通信，接收客户端发过来的报文后，回复处理结果。
+    \item 创建服务端的socket。socket()
+    \item 把服务端指定的用于通信的ip地址和端口绑定到socket上。bind()
+    \item 把socket设置为监听模式，以监听用户请求。listen()
+    \item 接受客户端的连接。accept()
+    \item 与客户端通信，接收客户端发过来的报文后，回复处理结果。send()/recv()
     \item 不断的重复上一步步，直到客户端断开连接。
-    \item 关闭socket，释放资源。
+    \item 关闭socket，释放资源。close()
 \end{itemize}
 
 \subsubsection{客户端}
 
 \begin{itemize}
-    \item 创建客户端的socket。
-    \item 向服务器发起连接请求。
-    \item 与服务端通信，发送一个报文后等待回复，然后再发下一个报文。
+    \item 创建客户端的socket。socket()
+    \item 向服务器发起连接请求。connect()
+    \item 与服务端通信，发送一个报文后等待回复，然后再发下一个报文。send()/recv()
     \item 不断的重复上一步，直到全部的数据被发送完。
-    \item 关闭socket，释放资源。
+    \item 关闭socket，释放资源。close()
 \end{itemize}
 
 
