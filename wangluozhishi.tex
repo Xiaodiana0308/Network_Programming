@@ -191,9 +191,19 @@ socket提供了流（stream）和数据报（datagram）两种通信机制，即
     \item 关闭socket，释放资源。close()
 \end{itemize}
 
+\subsection{客户端服务端程序概要}
+
+\subsubsection{socket文件描述符}
+
+在Linux系统中，一切输入输出设备皆文件，socket()函数的返回值其本质是一个文件描述符，是一个整数。而socket本质上可以视为一种特殊的文件，即通信的实现，因此socket的通信过程也可以理解为通过“打开open –> 读写write/read –> 关闭close”模式的操作过程。
+
+以下为几种常用的接口函数：
+
+\subsubsection{socket函数}
 
 
 
+int socket (int \_domain, int \_type, int \_protocol) \_THROW ;
 
 
 
