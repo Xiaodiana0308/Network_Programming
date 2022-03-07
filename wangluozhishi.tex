@@ -191,15 +191,27 @@ socket提供了流（stream）和数据报（datagram）两种通信机制，即
     \item 关闭socket，释放资源。close()
 \end{itemize}
 
-\subsection{Socket文件描述符}
+\subsection{Socket}
 
 在Linux系统中，一切输入输出设备皆文件。而socket本质上可以视为一种特殊的文件，即通信的实现，因此socket的通信过程也可以理解为通过“打开open –> 读写write/read –> 关闭close”模式的操作过程。
+
+注意：
+
+a. 客户端有一个socket，是用于发送报文的socket；而服务端有两个socket，一个是用于监听的socket，还有一个就是客户端连接成功后，由accept函数创建的用于与客户端收发报文的socket。
+
+b. socket是系统资源，操作系统打开的socket数量是有限的，在程序退出之前必须关闭已打开的socket，就像关闭文件指针一样，就像delete已分配的内存一样，极其重要。
+
+c. 值得注意的是，关闭socket的代码不能只在main函数的最后，那是程序运行的理想状态，还应该在main函数的每个return之前关闭。
 
 \subsection{客户端服务端主要参数及结构体}
 
 \subsubsection{socket()返回的值}
 
 返回值称为socket描述符（socket descriptor），其本质是一个文件描述符，是一个整数。把它作为参数，通过它来进行一些读写操作。
+
+0表示标准输入，1表示标准输出，2表示标准错误。
+
+注意，默认创建的socket是主动连接的。
 
 \subsubsection{struct hostent* h}
 
@@ -215,12 +227,17 @@ struct hostent
 
 \qquad    int h\_addrtype; //主机IP地址的类型，例如IPV4（AF\_INET）还是IPV6
 
-\qquad    int h\_length;  //主机IP地址长度，IPV4地址为4，IPV6地址则为16
+\qquad    int h\_length;  //主机IP地址长度，IPV4地址为4，IPV6地址则为16。【常用】
 
-\qquad    char **h\_addr\_list;  //主机的ip地址，以网络字节序存储。若要打印出这个IP，需要调用inet\_ntoa()。
+\qquad    char **h\_addr\_list;  //主机的ip地址，以网络字节序存储。若要打印出这个IP，需要调用inet\_ntoa()。【常用】
 
 \};
 
+\paragraph{操作函数}~{}
+
+*gethostbyname(const char *name);
+
+用于客户端指定服务端的ip地址，详见后文函数介绍，注意参数为char类型的常量。成功执行该函数后结构体内各变量均可获得。
 
 \subsubsection{struct sockaddr\_in servaddr}
 
@@ -230,11 +247,11 @@ struct sockaddr\_in
 
 \{
 
-\qquad sa\_family\_t \quad servaddr.sin\_family; //协议族，在socket编程中只能是AF\_INET。
+\qquad sa\_family\_t \quad sin\_family; //协议族，在socket编程中只能是AF\_INET。
 
-\qquad unit16\_t \quad servaddr.sin\_addr.port; //16位的TCP/UDP端口号。
+\qquad unit16\_t \quad sin\_addr.port; //16位的TCP/UDP端口号。
 
-\qquad In\_addr\_t \quad servaddr.sin\_addr.s\_addr; //32位IP v4地址。(其中sin\_addr是一个结构体类型变量，表示32位IP地址，内仅包含s\_addr一个变量)
+\qquad In\_addr\_t \quad sin\_addr.s\_addr; //32位IP v4地址。(其中sin\_addr是一个结构体类型变量，表示32位IP地址，内仅包含s\_addr一个变量)
 
 \qquad char \quad sin\_zero[8]; //不使用。
 
@@ -243,17 +260,18 @@ struct sockaddr\_in
 \paragraph{操作函数}~{}
 
 \begin{itemize}
-    \item 绑定IP地址：
+    \item 服务端绑定(自身的)IP地址：
 
-    servaddr.sin\_addr.s\_addr = inet\_addr("192.168.149.129");  // 指定ip地址
+    servaddr.sin\_addr.s\_addr = \textcolor{red}{inet\_addr}("192.168.149.129");  // 指定ip地址
 
-    servaddr.sin\_addr.s\_addr = htonl(INADDR\_ANY);  // 本主机的任意ip地址
+    servaddr.sin\_addr.s\_addr = \textcolor{red}{htonl(INADDR\_ANY)};  // 本主机的任意ip地址。在实际开发中，采用任意ip地址的方式比较多。
 
-    \item 绑定的通信端口:
+    \item 服务端绑定通信端口，也可用于客户端指定服务端的通信端口：
     
-    m\_servaddr.sin\_port = htons(5000);  // 通信端口
+    servaddr.sin\_port = \textcolor{red}{htons}(5000);  // 通信端口5000
 
-    \item 
+    注意htons()的参数为int型，若用argv[]来传递，需要强制转换类型函数atoi()。
+
 \end{itemize}
 
 \subsection{客户端服务端函数}
@@ -292,7 +310,55 @@ int socket (int domain, int type, int protocol);
     \item 正常情况，第一个参数只能填AF\_INET，第二个参数只能填SOCK\_STREAM，第三个参数只能填0。
 \end{itemize}
 
-使用：int sockfd = socket(AF\_NET,SOCK\_STREAM,0))
+使用：\textcolor{red}{int sockfd = socket(AF\_NET,SOCK\_STREAM,0))}
+
+\subsubsection{send()函数}
+
+功能：用于把数据通过socket发送给对端。
+
+返回值：函数返回已发送的字符数。出错时返回-1，错误信息errno被标记。
+
+适用范围：客户端、服务端。
+
+注意：注意，就算是网络断开，或socket已被对端关闭，send函数不会立即报错，要过几秒才会报错。如果send函数返回的错误（<=0），表示通信链路已不可用。
+
+\paragraph{函数声明}~{}
+
+ssize\_t send(int sockfd, const void *buf, size\_t len, int flags);
+
+sockfd：为已建立好连接的socket。
+
+buf：为需要发送的数据的内存地址，可以是C语言基本数据类型变量的地址，也可以数组、结构体、字符串，内存中有什么就发送什么。
+
+len：需要发送的数据的长度，为buf中有效数据的长度。
+
+flags：填0, 其他数值意义不大。
+
+使用：\textcolor{red}{iret=send(sockfd,buffer,strlen(buffer),0);}
+
+\subsubsection{recv()函数}
+
+功能：用于接收对端socket发送过来的数据。
+
+返回值：函数返回已接收的字符数。出错时返回-1，失败时不会设置errno的值。
+
+适用范围：客户端、服务端。
+
+注意：如果socket的对端没有发送数据，recv函数就会等待，如果对端发送了数据，函数返回接收到的字符数。出错时返回-1。如果socket被对端关闭，返回值为0。如果recv函数返回的错误（<=0），表示通信通道已不可用。
+
+\paragraph{函数声明}~{}
+
+ssize\_t recv(int sockfd, void *buf, size\_t len, int flags);
+
+sockfd：为已建立好连接的socket。
+
+buf：为用于接收数据的内存地址，可以是C语言基本数据类型变量的地址，也可以数组、结构体、字符串，只要是一块内存就行了。
+
+len：需要接收数据的长度，不能超过buf的大小，否则内存溢出。
+
+flags：填0, 其他数值意义不大。
+
+使用：\textcolor{red}{iret=recv(sockfd,buffer,sizeof(buffer),0);}
 
 \subsubsection{gethostbyname()函数}
 
@@ -310,7 +376,7 @@ struct hostent *gethostbyname(const char *name);
 
 name：域名或者主机名，例如"192.168.1.3"、"www.freecplus.net"等。
 
-使用：struct hostent *h = gethostbyname(argv[1])
+使用：\textcolor{red}{struct hostent *h = gethostbyname(argv[1])}
 
 \subsubsection{附注：memset()函数}
 
@@ -321,6 +387,16 @@ str -- 指向要填充的内存块。
 c -- 要被设置的值。该值以 int 形式传递，但是函数在填充内存块时是使用该值的无符号字符形式。默认0。
 
 n -- 大小，sizeof(str)。
+
+\subsubsection{附注：memcpy()函数}
+
+void *memcpy(void *str1, const void *str2, size\_t n)
+
+str1 -- 指向用于存储复制内容的目标数组，类型强制转换为 void* 指针。
+
+str2 -- 指向要复制的数据源，类型强制转换为 void* 指针。
+
+n -- 要被复制的字节数。
 
 \subsubsection{connect()函数}
 
@@ -366,13 +442,53 @@ addrlen：表示服务端addr结构体的大小。
 
 使用：\textcolor{red}{bind(listenfd,(struct sockaddr *)\&servaddr,sizeof(servaddr))；}
 
+\subsubsection{listen()函数}
 
+功能：用于把主动连接socket变为被动连接的socket，使得这个socket可以接受其它socket的连接请求，从而成为一个服务端的socket。 当调用listen之后，服务端的socket就可以调用accept来接受客户端的连接请求。
 
-int socket (int \_domain, int \_type, int \_protocol) \_THROW ;
+返回值：0-成功， -1-失败，错误原因存于errno 中。
 
+listen函数一般不会返回错误。
 
+适用范围：服务端。
 
+\paragraph{函数声明}~{}
 
+int listen(int sockfd, int backlog);
+
+sockfd：是已经被bind过的socket。
+
+backlog：这个参数涉及到一些网络的细节，比较麻烦，填5、10都行，一般不超过30。
+
+使用：\textcolor{red}{listen(listenfd,5);}
+
+\subsubsection{accept()函数}
+
+功能：用于服务端接受客户端的连接。
+
+返回值：成功则返回0，失败返回-1，错误原因存于errno 中。
+
+适用范围：服务端。
+
+注意：
+
+a. accept在等待的过程中，如果被中断或其它的原因，函数返回-1，表示失败，如果失败，可以重新accept。
+
+b. accept函数等待客户端的连接，如果没有客户端连上来，它就一直等待，这种方式称之为阻塞。
+
+c. accept等待到客户端的连接后，\textcolor{red}{创建一个新的socket，函数返回值就是这个新的socket，服务端使用这个新的socket和客户端进行报文的收发。}
+
+\paragraph{函数声明}~{}
+
+int accept(int sockfd,struct sockaddr *addr,socklen\_t *addrlen);
+
+sockfd：是已经被listen过的socket。
+
+addr：用于存放客户端的地址信息，用sockaddr结构体表达，如果不需要客户端的地址，可以填0。
+
+addrlen：用于存放addr参数的长度，如果addr为0，addrlen也填0。
+
+使用：\textcolor{red}{clientfd=accept(listenfd,(struct sockaddr *)\&clientaddr,(socklen\_t*)\&socklen);}
 
 \begin{itemize}
     \item 
