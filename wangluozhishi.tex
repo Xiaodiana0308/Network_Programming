@@ -172,25 +172,199 @@ socket提供了流（stream）和数据报（datagram）两种通信机制，即
 \subsubsection{服务端}
 
 \begin{itemize}
-    \item 创建服务端的socket。
-    \item 把服务端指定的用于通信的ip地址和端口绑定到socket上。
-    \item 把socket设置为监听模式，以监听用户请求。
-    \item 接受客户端的连接。
-    \item 与客户端通信，接收客户端发过来的报文后，回复处理结果。
+    \item 创建服务端的socket。socket()
+    \item 把服务端指定的用于通信的ip地址和端口绑定到socket上。bind()
+    \item 把socket设置为监听模式，以监听用户请求。listen()
+    \item 接受客户端的连接。accept()
+    \item 与客户端通信，接收客户端发过来的报文后，回复处理结果。send()/recv()
     \item 不断的重复上一步步，直到客户端断开连接。
-    \item 关闭socket，释放资源。
+    \item 关闭socket，释放资源。close()
 \end{itemize}
 
 \subsubsection{客户端}
 
 \begin{itemize}
-    \item 创建客户端的socket。
-    \item 向服务器发起连接请求。
-    \item 与服务端通信，发送一个报文后等待回复，然后再发下一个报文。
+    \item 创建客户端的socket。socket()
+    \item 向服务器发起连接请求。connect()
+    \item 与服务端通信，发送一个报文后等待回复，然后再发下一个报文。send()/recv()
     \item 不断的重复上一步，直到全部的数据被发送完。
-    \item 关闭socket，释放资源。
+    \item 关闭socket，释放资源。close()
 \end{itemize}
 
+\subsection{Socket文件描述符}
+
+在Linux系统中，一切输入输出设备皆文件。而socket本质上可以视为一种特殊的文件，即通信的实现，因此socket的通信过程也可以理解为通过“打开open –> 读写write/read –> 关闭close”模式的操作过程。
+
+\subsection{客户端服务端主要参数及结构体}
+
+\subsubsection{socket()返回的值}
+
+返回值称为socket描述符（socket descriptor），其本质是一个文件描述符，是一个整数。把它作为参数，通过它来进行一些读写操作。
+
+\subsubsection{struct hostent* h}
+
+域名和网络地址结构体：
+
+struct hostent
+
+\{
+
+\qquad    char *h\_name;  //主机名，即官方域名
+    
+\qquad    char **h\_aliases;  //主机所有别名构成的字符串数组，同一IP可绑定多个域名
+
+\qquad    int h\_addrtype; //主机IP地址的类型，例如IPV4（AF\_INET）还是IPV6
+
+\qquad    int h\_length;  //主机IP地址长度，IPV4地址为4，IPV6地址则为16
+
+\qquad    char **h\_addr\_list;  //主机的ip地址，以网络字节序存储。若要打印出这个IP，需要调用inet\_ntoa()。
+
+\};
+
+
+\subsubsection{struct sockaddr\_in servaddr}
+
+表示地址信息的数据结构（体），存放了目标地址和端口。与结构体sockaddr把目标地址和端口信息混在一起了不同，其把port和addr 分开储存在两个变量中。
+
+struct sockaddr\_in
+
+\{
+
+\qquad sa\_family\_t \quad servaddr.sin\_family; //协议族，在socket编程中只能是AF\_INET。
+
+\qquad unit16\_t \quad servaddr.sin\_addr.port; //16位的TCP/UDP端口号。
+
+\qquad In\_addr\_t \quad servaddr.sin\_addr.s\_addr; //32位IP v4地址。(其中sin\_addr是一个结构体类型变量，表示32位IP地址，内仅包含s\_addr一个变量)
+
+\qquad char \quad sin\_zero[8]; //不使用。
+
+\}
+
+\paragraph{操作函数}~{}
+
+\begin{itemize}
+    \item 绑定IP地址：
+
+    servaddr.sin\_addr.s\_addr = inet\_addr("192.168.149.129");  // 指定ip地址
+
+    servaddr.sin\_addr.s\_addr = htonl(INADDR\_ANY);  // 本主机的任意ip地址
+
+    \item 绑定的通信端口:
+    
+    m\_servaddr.sin\_port = htons(5000);  // 通信端口
+
+    \item 
+\end{itemize}
+
+\subsection{客户端服务端函数}
+
+以下为几种常用的接口函数：
+
+\subsubsection{socket()函数}
+
+功能：用于创建一个新的socket。对应于普通文件的打开操作。
+
+返回值：成功则返回一个socket描述符，失败返回-1，错误原因存于errno 中。
+
+使用范围：客户端、服务端。
+
+\paragraph{函数声明}~{}
+
+int socket (int domain, int type, int protocol);
+
+\begin{itemize}
+    \item domain：协议域，又称协议族（family）。协议族决定了socket的地址类型，在通信中必须采用对应的地址。
+    
+        AF\_INET：决定了要用ipv4地址（32位的）与端口号（16位的）的组合；
+
+        AF\_UNIX：决定了要用一个绝对路径名作为地址。
+
+    \item type：指定socket类型。
+    
+        流式socket（SOCK\_STREAM）是一种面向连接的socket，针对于面向连接的TCP服务应用。数据报式socket（SOCK\_DGRAM）是一种无连接的socket，对应于无连接的UDP服务应用。
+
+    \item protocol：指定协议。
+    
+        常用协议有IPPROTO\_TCP、IPPROTO\_UDP、IPPROTO\_STCP、IPPROTO\_TIPC等，分别对应TCP传输协议、UDP传输协议、STCP传输协议、TIPC传输协议。
+
+        注意为0则与type相匹配，与type不能随意匹配。
+
+    \item 正常情况，第一个参数只能填AF\_INET，第二个参数只能填SOCK\_STREAM，第三个参数只能填0。
+\end{itemize}
+
+使用：int sockfd = socket(AF\_NET,SOCK\_STREAM,0))
+
+\subsubsection{gethostbyname()函数}
+
+功能：把ip地址或域名转换为hostent 结构体表达的地址。
+
+返回值：如果成功，返回一个hostent结构指针，失败返回NULL。
+
+适用范围：客户端。
+
+注意：只要地址格式没错，一般不会返回错误。失败时不会设置errno的值。
+
+\paragraph{函数声明}~{}
+
+struct hostent *gethostbyname(const char *name);
+
+name：域名或者主机名，例如"192.168.1.3"、"www.freecplus.net"等。
+
+使用：struct hostent *h = gethostbyname(argv[1])
+
+\subsubsection{附注：memset()函数}
+
+void *memset(void *str, int c, size\_t n)
+
+str -- 指向要填充的内存块。
+
+c -- 要被设置的值。该值以 int 形式传递，但是函数在填充内存块时是使用该值的无符号字符形式。默认0。
+
+n -- 大小，sizeof(str)。
+
+\subsubsection{connect()函数}
+
+功能：客户端通过调用connect函数来建立客户端socket与服务器的连接。
+
+返回值：成功则返回0，失败返回-1，错误原因存于errno 中。
+
+适用范围：客户端。
+
+注意：如果服务端的地址错了，或端口错了，或服务端没有启动，connect一定会失败。
+
+\paragraph{函数声明}~{}
+
+int connect(int sockfd, const struct sockaddr *addr, socklen\_t addrlen);
+
+sockfd：客户端的socket描述字。
+
+*addr：服务端的socket地址。
+
+addrlen：为服务端socket地址的长度（addr结构体的大小）。
+
+使用：\textcolor{red}{connect(sockfd, (struct sockaddr *)\&servaddr,sizeof(servaddr))}
+
+\subsubsection{bind()函数}
+
+功能：服务端把自身用于通信的地址和端口绑定到socket上。
+
+返回值：成功则返回0，失败返回-1，错误原因存于errno 中。
+
+适用范围：服务端。
+
+注意：如果绑定的地址错误，或端口已被占用，bind函数一定会报错，否则一般不会返回错误。
+
+\paragraph{函数声明}~{}
+
+int bind(int sockfd, const struct sockaddr *addr, socklen\_t addrlen);
+
+sockfd：服务端socket描述字。
+
+*addr：表示服务端的socket地址。一个const struct sockaddr *指针，指向要绑定给sockfd的协议地址。addr。
+
+addrlen：表示服务端addr结构体的大小。
+
+使用：\textcolor{red}{bind(listenfd,(struct sockaddr *)\&servaddr,sizeof(servaddr))；}
 
 
 
