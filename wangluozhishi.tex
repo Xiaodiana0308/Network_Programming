@@ -201,7 +201,7 @@ a. 客户端有一个socket，是用于发送报文的socket；而服务端有�
 
 b. socket是系统资源，操作系统打开的socket数量是有限的，在程序退出之前必须关闭已打开的socket，就像关闭文件指针一样，就像delete已分配的内存一样，极其重要。
 
-c. 值得注意的是，关闭socket的代码不能只在main函数的最后，那是程序运行的理想状态，还应该在main函数的每个return之前关闭。
+c. 关闭socket的代码不能只在main函数的最后，那是程序运行的理想状态，还应该在main函数的每个return之前关闭。
 
 \subsection{客户端服务端主要参数及结构体}
 
@@ -211,7 +211,7 @@ c. 值得注意的是，关闭socket的代码不能只在main函数的最后，�
 
 0表示标准输入，1表示标准输出，2表示标准错误。
 
-注意，默认创建的socket是主动连接的。
+注意：默认创建的socket是主动连接的。
 
 \subsubsection{struct hostent* h}
 
@@ -273,6 +273,8 @@ struct sockaddr\_in
     注意htons()的参数为int型，若用argv[]来传递，需要强制转换类型函数atoi()。
 
 \end{itemize}
+
+注意：通常服务器在启动的时候都会绑定一个众所周知的地址（如ip地址+端口号），用于提供服务，客户就可以通过它来接连服务器；而客户端就不用指定，有系统自动分配一个端口号和自身的ip地址组合。这就是为什么通常服务器端在listen之前会调用bind()，而客户端就不会调用，而是在connect()时由系统随机生成一个。
 
 \subsection{客户端服务端函数}
 
@@ -434,7 +436,7 @@ addrlen：为服务端socket地址的长度（addr结构体的大小）。
 
 int bind(int sockfd, const struct sockaddr *addr, socklen\_t addrlen);
 
-sockfd：服务端socket描述字。
+sockfd：服务端。
 
 *addr：表示服务端的socket地址。一个const struct sockaddr *指针，指向要绑定给sockfd的协议地址。addr。
 
