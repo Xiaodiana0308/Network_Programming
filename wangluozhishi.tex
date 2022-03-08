@@ -230,6 +230,7 @@ d. socket类型的servaddr的地址，(struct sockaddr *)\&servaddr。
 
     \item 网络字节序NBO：网络字节序是大端字节序。在进行网络传输的时候，发送端发送的第一个字节是高位字节。
     \item 主机字节序HBO：不同的机器HBO不相同，与CPU的设计有关，数据的顺序是由CPU决定的，而与操作系统无关。不同体系结构的机器之间不能直接通信，所以要转换成一种约定的顺序，也就是网络字节顺序。存在专门的函数来进行二者的转换。
+    \item 转换函数命名规则：h主机、n是网络字节序，to是转换为，s是短型数据，l是长型。
     \item 命名规则：
     
     socket字符：sockfd客户端，listenfd服务端；
@@ -251,11 +252,11 @@ struct hostent
     
 \qquad    char **h\_aliases;  //主机所有别名构成的字符串数组，同一IP可绑定多个域名
 
-\qquad    int h\_addrtype; //主机IP地址的类型，例如IPV4（AF\_INET）还是IPV6【需转化】
+\qquad    int h\_addrtype; //主机IP地址的类型，AF\_INET（ipv4）、AF\_INET6（ipv6）
 
 \qquad    int h\_length;  //主机IP地址长度，IPV4地址为4，IPV6地址则为16。【常用】
 
-\qquad    char **h\_addr\_list;  //主机的ip地址，虽然为char形式，但以网络字节序格式存储。若要打印出这个IP，需要调用inet\_ntoa()。【常用】
+\qquad    char **h\_addr\_list;  //主机的ip地址，虽然为char形式，但以网络字节序格式存储，可以通过memcpy互相拷贝。若要打印出这个IP，需要调用inet\_ntoa()。【常用】
 
 \};
 
@@ -263,6 +264,8 @@ struct hostent
 a. 通常用于客户端已知对方ip情况下获得对方网络其他信息。
 
 b. 与下面的结构体一样，定义时指的是哪个端，其内数据就指哪个端。
+
+c. 具有预定义参数：\# define h\_addr  h\_addr\_list[0]
 
 \paragraph{操作函数}~{}
 
@@ -272,10 +275,20 @@ b. 与下面的结构体一样，定义时指的是哪个端，其内数据就�
     
     用于客户端指定服务端的ip地址，详见后文函数介绍，注意参数为char类型的常量。成功执行该函数后结构体内各变量均可获得。
 
-    \item inet\_ntop(h->h\_addrtype);
+    \item 新型网路地址转化函数inet\_pton和inet\_ntop：
     
-    将网络字节序的二进制转换为文本字符串的格式。
+    这两个函数是随IPv6出现的函数，对于IPv4地址和IPv6地址都适用，函数中p和n分别代表表达（presentation)和数值（numeric)。地址的表达格式通常是ASCII字符串，数值格式则是存放到套接字地址结构的二进制值。
 
+    int inet\_pton(int family, const char *strptr, void *addrptr);     //将点分十进制的ip地址转化为用于网络传输的数值格式
+        
+    返回值：若成功则为1，若输入不是有效的表达式则为0，若出错则为-1。
+ 
+    const char * inet\_ntop(int family, const void *addrptr, char *strptr, size\_t len);     //将数值格式转化为点分十进制的ip地址格式
+
+    返回值：若成功则为指向结构的指针，若出错则为NULL。
+
+    其中：family即主机IP地址的类型参数。
+    
 \end{itemize}
 
 \subsubsection{struct sockaddr\_in servaddr}
@@ -311,18 +324,17 @@ struct in\_addr
 \paragraph{操作函数}~{}
 
 \begin{itemize}
-    \item inet\_addr()：将网络地址字符串（IP字符串）转为网络二进制数字（网络字节序），返回的IP地址是网络字节序的。
+    \item inet\_addr()：将十进制IP地址字符串转为网络二进制数字（网络字节序），返回的IP地址是网络字节序的。
     
-    (const char----> in\_addr\_t)(ascii to network)
+    (const char----> \textcolor{red}{in\_addr\_t})(ascii to network)
 
-    \item inet\_ntoa()：将网络二进制数字（网络字节序）转为网络地址字符串（IP字符串）。
+    \item inet\_ntoa()：将网络二进制数字（网络字节序）转为十进制IP地址字符串。
     
-    (in\_addr\_t---->const char)(network to ascii)
+    (in\_addr---->const char)(network to ascii)
 
-
-    \item inet\_aton()：将网络地址转为网络字节序，与inet\_addr的区别是，结果不是作为返回值，而是保存形参inp所指的in\_addr\_t结构体中。函数原型：int inet\_aton(cont char* cp, struct in\_addr\_t *inp)
+    \item inet\_aton()：将十进制IP地址字符串转为网络二进制数字（网络字节序），与inet\_addr的区别是，结果不是作为返回值，而是保存形参inp所指的in\_addr\_t结构体中。函数原型：int inet\_aton(cont char* cp, struct in\_addr\_t *inp)
     
-    (const char----> in\_addr\_t)(ascii to network)
+    (const char----> in\_addr)(ascii to network)
 
     \item htons()作用是将端口号由主机字节序转换为网络字节序的整数值。
     
@@ -348,8 +360,8 @@ struct in\_addr
     
     servaddr.sin\_port = \textcolor{red}{htons}(5000);  // 通信端口5000
 
-    \item 注意htons()的参数为int型的无符号短整形数，若用argv[]来传递，需要强制转换类型函数atoi()。同理htonl()。
-
+    \item 注意：htons()的参数为int型的无符号短整形数，若用argv[]来传递，需要强制转换类型函数atoi()。同理htonl()。
+    \item 注意：其中sin\_addr和sin\_port的字节序都是网络字节序，而sin\_family不是。因为前者是从IP和UDP协议层取出来的数据，是直接和网络相关的。但sin\_family域只是内核用来判断struct sockaddr\_in是存储的什么类型的数据，且永远不会被发送到网络上，所以可以使用主机字节序来存储。
     \item 注意：不论是那个端的程序采用，servaddr指的是哪个端，端口、IP地址就是哪个端。
 
 \end{itemize}
@@ -482,6 +494,10 @@ str2 -- 指向要复制的数据源，类型强制转换为 void* 指针。
 
 n -- 要被复制的字节数。
 
+注意：支持不同类型数据的拷贝。
+
+memcpy()用来拷贝src \textcolor{red}{所指的内存内容}前n个字节到dest所指的内存地址上。与strcpy()不同的是,memcpy()会完整的复制n个字节,不会因为遇到字符串结束'\\0'而结束。
+
 \subsubsection{connect()函数}
 
 功能：客户端通过调用connect函数来建立客户端socket与服务器的连接。
@@ -584,7 +600,7 @@ addrlen：用于存放addr参数的长度，如果addr为0，addrlen也填0。
     
     (struct sockaddr *)\& + 地址名
 
-    \item 
+    \item 凡是需要网络地址参数的函数，都必须将类型强制转化为\textcolor{red}{(struct sockaddr *)}类型，因为函数在设计时没有考虑sockaddr\_in类型。
 \end{itemize}
 
 \section{}
