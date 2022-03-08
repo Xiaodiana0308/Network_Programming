@@ -230,6 +230,12 @@ d. socket类型的servaddr的地址，(struct sockaddr *)\&servaddr。
 
     \item 网络字节序NBO：网络字节序是大端字节序。在进行网络传输的时候，发送端发送的第一个字节是高位字节。
     \item 主机字节序HBO：不同的机器HBO不相同，与CPU的设计有关，数据的顺序是由CPU决定的，而与操作系统无关。不同体系结构的机器之间不能直接通信，所以要转换成一种约定的顺序，也就是网络字节顺序。存在专门的函数来进行二者的转换。
+    \item 命名规则：
+    
+    socket字符：sockfd客户端，listenfd服务端；
+
+    网络地址：clientaddr客户端，servaddr服务端；
+    \item 
 
 \end{itemize}
 
@@ -249,7 +255,7 @@ struct hostent
 
 \qquad    int h\_length;  //主机IP地址长度，IPV4地址为4，IPV6地址则为16。【常用】
 
-\qquad    char **h\_addr\_list;  //主机的ip地址，以网络字节序存储。若要打印出这个IP，需要调用inet\_ntoa()。【常用】
+\qquad    char **h\_addr\_list;  //主机的ip地址，虽然为char形式，但以网络字节序格式存储。若要打印出这个IP，需要调用inet\_ntoa()。【常用】
 
 \};
 
@@ -463,6 +469,8 @@ str -- 指向要填充的内存块。
 c -- 要被设置的值。该值以 int 形式传递，但是函数在填充内存块时是使用该值的无符号字符形式。默认0。
 
 n -- 大小，sizeof(str)。
+
+注意：与malloc不同之处为后者未初始化。而new 返回指定类型的指针，并且可以自动计算所需要大小。
 
 \subsubsection{附注：memcpy()函数}
 
