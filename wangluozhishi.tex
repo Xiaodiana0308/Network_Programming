@@ -408,31 +408,43 @@ int socket (int domain, int type, int protocol);
 
 \subsubsection{send()函数}
 
-功能：用于把数据通过socket发送给对端。
+功能：把数据通过socket发送给对端。
 
 返回值：函数返回已发送的字符数。出错时返回-1，错误信息errno被标记。
 
 适用范围：客户端、服务端。
 
-注意：注意，就算是网络断开，或socket已被对端关闭，send函数不会立即报错，要过几秒才会报错。如果send函数返回的错误（<=0），表示通信链路已不可用。
+注意：就算是网络断开，或socket已被对端关闭，send函数不会立即报错，要过几秒才会报错。如果send函数返回的错误（<=0），表示通信链路已不可用。
 
 \paragraph{函数声明}~{}
 
 ssize\_t send(int sockfd, const void *buf, size\_t len, int flags);
 
-sockfd：为已建立好连接的对方端的socket。
+sockfd：对方socket(已建立好连接)。
 
-buf：为需要发送的数据的内存地址，可以是C语言基本数据类型变量的地址，也可以数组、结构体、字符串，内存中有什么就发送什么。
+buf：需发送数据的内存地址(指针就行)。
 
-len：需要发送的数据的长度，为buf中有效数据的长度。
+len：需发送数据的长度，strlen()即可。
 
 flags：填0, 其他数值意义不大。
+
+\paragraph{附录}~{}
+
+\begin{itemize}
+    \item MSG\_CONFIRM ：用来告诉链路层。
+    \item MSG\_DONTROUTE：不要使用网关来发送数据，只发送到直接连接的主机上。通常只有诊断或者路由程序会使用，这只针对路由的协议族定义的，数据包的套接字没有。
+    \item MSG\_DONTWAIT ：启用非阻塞操作，如果操作阻塞，就返回EAGAIN或EWOULDBLOCK。
+    \item MSG\_EOR ：当支持SOCK\_SEQPACKET时，终止记录。
+    \item MSG\_MORE ：调用方有更多的数据要发送。这个标志与TCP或者udp套接字一起使用。
+    \item MSG\_NOSIGNAL ：当另一端中断连接时，请求不向流定向套接字上的错误发送SIGPIPE,EPIPE 错误仍然返回。
+    \item MSG\_OOB：在支持此概念的套接字上发送带外数据（例如，SOCK\_STREAM类型）；底层协议还必须支持带外数据。
+\end{itemize}
 
 使用：\textcolor{red}{iret=send(sockfd,buffer,strlen(buffer),0);}
 
 \subsubsection{recv()函数}
 
-功能：用于接收对方socket发送过来的数据。
+功能：接收对方socket发送过来的数据。
 
 返回值：函数返回已接收的字符数。出错时返回-1，失败时不会设置errno的值。
 
@@ -446,9 +458,9 @@ ssize\_t recv(int sockfd, void *buf, size\_t len, int flags);
 
 sockfd：为已建立好连接的对方端的socket。
 
-buf：为用于接收数据的内存地址，可以是C语言基本数据类型变量的地址，也可以数组、结构体、字符串，只要是一块内存就行了。
+buf：用于接收数据的内存地址。
 
-len：需要接收数据的长度，不能超过buf的大小，否则内存溢出。
+len：接收数据的长度，不能超过buf的大小，否则内存溢出。
 
 flags：填0, 其他数值意义不大。
 
@@ -472,32 +484,6 @@ name：域名或者主机名，例如"192.168.1.3"、"www.freecplus.net"等。
 
 使用：\textcolor{red}{struct hostent *h = gethostbyname(argv[1])}
 
-\subsubsection{附注：memset()函数}
-
-void *memset(void *str, int c, size\_t n)
-
-str -- 指向要填充的内存块。
-
-c -- 要被设置的值。该值以 int 形式传递，但是函数在填充内存块时是使用该值的无符号字符形式。默认0。
-
-n -- 大小，sizeof(str)。
-
-注意：与malloc不同之处为后者未初始化。而new 返回指定类型的指针，并且可以自动计算所需要大小。
-
-\subsubsection{附注：memcpy()函数}
-
-void *memcpy(void *str1, const void *str2, size\_t n)
-
-str1 -- 指向用于存储复制内容的目标数组，类型强制转换为 void* 指针。
-
-str2 -- 指向要复制的数据源，类型强制转换为 void* 指针。
-
-n -- 要被复制的字节数。
-
-注意：支持不同类型数据的拷贝。
-
-memcpy()用来拷贝src \textcolor{red}{所指的内存内容}前n个字节到dest所指的内存地址上。与strcpy()不同的是,memcpy()会完整的复制n个字节,不会因为遇到字符串结束'\\0'而结束。
-
 \subsubsection{connect()函数}
 
 功能：客户端通过调用connect函数来建立客户端socket与服务器的连接。
@@ -512,11 +498,11 @@ memcpy()用来拷贝src \textcolor{red}{所指的内存内容}前n个字节到de
 
 int connect(int sockfd, const struct sockaddr *addr, socklen\_t addrlen);
 
-sockfd：客户端的socket描述字。
+sockfd：客户端的socket。
 
-*addr：服务端的socket地址信息。
+*addr：服务端的网络地址。
 
-addrlen：服务端socket地址的长度（addr结构体的大小）。
+addrlen：服务端网络地址的长度（addr结构体的大小）。
 
 使用：\textcolor{red}{connect(sockfd, (struct sockaddr *)\&servaddr,sizeof(servaddr))}
 
@@ -536,9 +522,9 @@ int bind(int sockfd, const struct sockaddr *addr, socklen\_t addrlen);
 
 sockfd：服务端socket。
 
-*addr：服务端的socket地址信息。（一个const struct sockaddr *指针，指向要绑定给sockfd的协议地址。存放了服务端用于通信的地址和端口。）
+*addr：服务端的网络地址。（一个const struct sockaddr *指针，指向要绑定给sockfd的协议地址。存放了服务端用于通信的地址和端口。）
 
-addrlen：服务端socket地址的长度。
+addrlen：服务端网络地址的长度。
 
 使用：\textcolor{red}{bind(listenfd,(struct sockaddr *)\&servaddr,sizeof(servaddr))；}
 
@@ -584,13 +570,51 @@ c. accept等待到客户端的连接后，\textcolor{red}{创建一个新的sock
 
 int accept(int sockfd,struct sockaddr *addr,socklen\_t *addrlen);
 
-sockfd：是服务端已经被listen过的socket。
+sockfd：服务端已经被listen过的socket。
 
-addr：用于存放客户端的地址信息，用sockaddr结构体表达，如果不需要客户端的地址，可以填0。也可以先定义一个空的客户端地址，然后填进去。
+addr：客户端的网络地址（sockaddr）。如果不需要客户端的地址，可以填0。也可以先定义一个空的客户端地址，然后填进去。
 
-addrlen：用于存放addr参数的长度，如果addr为0，addrlen也填0。
+addrlen：客户端网络地址长度，如果addr为0，addrlen也填0。
 
 使用：\textcolor{red}{clientfd=accept(listenfd,(struct sockaddr *)\&clientaddr,(socklen\_t*)\&socklen);}
+
+\subsubsection{附注：memset()函数}
+
+void *memset(void *str, int c, size\_t n)
+
+str -- 指向要填充的内存块。
+
+c -- 要被设置的值。该值以 int 形式传递，但是函数在填充内存块时是使用该值的无符号字符形式。默认0。
+
+n -- 大小，sizeof(str)。
+
+注意：与malloc不同之处为后者未初始化。而new 返回指定类型的指针，并且可以自动计算所需要大小。
+
+\subsubsection{附注：memcpy()函数}
+
+void *memcpy(void *str1, const void *str2, size\_t n)
+
+str1 -- 指向用于存储复制内容的目标数组，类型强制转换为 void* 指针。
+
+str2 -- 指向要复制的数据源，类型强制转换为 void* 指针。
+
+n -- 要被复制的字节数。
+
+注意：支持不同类型数据的拷贝。
+
+memcpy()用来拷贝src \textcolor{red}{所指的内存内容}前n个字节到dest所指的内存地址上。与strcpy()不同的是,memcpy()会完整的复制n个字节,不会因为遇到字符串结束'\\0'而结束。
+
+\subsubsection{附注：sprintf()函数}
+
+int sprintf(char *str, const char *format, ...);
+
+用途：把结果输出到指定的字符串中。
+
+str -- 这是指向一个字符数组的指针，该数组存储了要写入的字符串。
+
+format -- 这是字符串，包含了要被写入到字符串 str 的文本。与之后参数一起使用，类似于格式化输出中\%d、\%f之类的用法。
+
+
 
 \subsection{注意事项}
 
@@ -601,6 +625,17 @@ addrlen：用于存放addr参数的长度，如果addr为0，addrlen也填0。
     (struct sockaddr *)\& + 地址名
 
     \item 凡是需要网络地址参数的函数，都必须将类型强制转化为\textcolor{red}{(struct sockaddr *)}类型，因为函数在设计时没有考虑sockaddr\_in类型。
+    \item 最好recv函数采用sizeof（最大值），send采用strlen（减少不必要的发送量）。
+    \item socket缓冲区：每一个socket在被创建之后，系统都会给它分配两个缓冲区，即输入缓冲区和输出缓冲区。一般来说，默认的输入输出缓冲区大小为8K。
+    \item send函数并不是直接将数据传输到网络中，而是负责将数据写入输出缓冲区，数据从输出缓冲区发送到目标主机是由TCP协议完成的。数据写入到输出缓冲区之后，send函数就可以返回了。（数据是否发送出去，是否发送成功，何时到达目标主机，都不由它负责了，而是由协议负责。）
+    
+    recv函数同理，它是从输入缓冲区中读取数据。
+
+    \item 套接字关闭的时候，输出缓冲区的数据不会丢失，会由协议发送到另一方；而输入缓冲区的数据则会丢失。
+    \item 数据的发送和接收是独立的，并不是发送方执行一次send，接收方就执行以此recv。recv函数不管发送几次，都会从输入缓冲区尽可能多的获取数据。如果发送方发送了多次信息，接收方没来得及进行recv，则数据堆积在输入缓冲区中，取数据的时候会都取出来。换句话说，recv并不能判断数据包的结束位置。
+    \item 在数据进行发送的时候，需要先检查输出缓冲区的可用空间大小，如果可用空间大小小于要发送的数据长度，则send会被阻塞，直到缓冲区中的数据被发送到目标主机，有了足够的空间之后，send函数才会将数据写入输出缓冲区。
+    \item TCP协议正在将数据发送到网络上的时候，输出缓冲区会被锁定（生产者消费者问题），不允许写入，send函数会被阻塞，直到数据发送完，输出缓冲区解锁，此时send才能将数据写入到输出缓冲区。
+    \item 函数先检查输入缓冲区，如果输入缓冲区中有数据，读取出缓冲区中的数据，否则的话，recv函数会被阻塞，等待网络上传来数据。如果读取的数据长度小于输出缓冲区中的数据长度，没法一次性将所有数据读出来，需要多次执行recv函数，才能将数据读取完毕。
 \end{itemize}
 
 \section{}
