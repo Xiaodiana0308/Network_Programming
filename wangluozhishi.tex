@@ -420,7 +420,7 @@ int socket (int domain, int type, int protocol);
 
 ssize\_t send(int sockfd, const void *buf, size\_t len, int flags);
 
-sockfd：对方socket(已建立好连接)。
+sockfd：已建立好连接的\textcolor{red}{客户端}socket。\textcolor{red}{客户端接受数据：本机套接字！服务端接受数据：对方套接字！}
 
 buf：需发送数据的内存地址(指针就行)。
 
@@ -456,7 +456,7 @@ flags：填0, 其他数值意义不大。
 
 ssize\_t recv(int sockfd, void *buf, size\_t len, int flags);
 
-sockfd：为已建立好连接的对方端的socket。
+sockfd：为已建立好连接的\textcolor{red}{客户端}socket。\textcolor{red}{客户端发送数据：本机套接字！服务端回复数据：对方套接字！}
 
 buf：用于接收数据的内存地址。
 
@@ -600,7 +600,7 @@ str2 -- 指向要复制的数据源，类型强制转换为 void* 指针。
 
 n -- 要被复制的字节数。
 
-注意：支持不同类型数据的拷贝。
+注意：支持不同类型数据的拷贝。支持不定大小的数据拷贝。
 
 memcpy()用来拷贝src \textcolor{red}{所指的内存内容}前n个字节到dest所指的内存地址上。与strcpy()不同的是,memcpy()会完整的复制n个字节,不会因为遇到字符串结束'\\0'而结束。
 
