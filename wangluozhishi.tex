@@ -77,12 +77,34 @@ fork表示：新的进程要通过老的进程复制自身得到，它是一个�
 
 \#include <pthread.h> 
 
-CMakeList.txt中需要加入：来添加链接库。
+CMakeList.txt中需要加入如下内容来添加链接库：
+
 find\_package(Threads)
 
 target\_link\_libraries( … \${CMAKE\_THREAD\_LIBS\_INIT})
 
 \subsubsection{pthread\_create函数}
+
+\paragraph{函数概述:}~{}
+
+\begin{itemize}
+    \item 功能：
+    \item 返回值：
+    \item 范围限制：
+    \item 注意：
+\end{itemize}
+
+\paragraph{函数声明：}~{}
+
+
+
+\begin{itemize}
+    \item 
+\end{itemize}
+
+使用示例：
+
+
 
 int pthread\_create(pthread\_t *thread, const pthread\_attr\_t *attr,
 
@@ -225,11 +247,11 @@ b. socket是系统资源，操作系统打开的socket数量是有限的，在�
 
 c. 关闭socket的代码不能只在main函数的最后，那是程序运行的理想状态，还应该在main函数的每个return之前关闭。
 
-d. socket类型的servaddr的地址，(struct sockaddr *)\&servaddr。
+d. socket类型的servaddr的地址的强制转换，(struct sockaddr *)\&servaddr。
 
-\subsection{客户端服务端主要参数及结构体}
+\subsection{Socket主要参数及结构体}
 
-\subsubsection{socket()返回的值}
+\subsubsection{socket函数返回的值}
 
 返回值称为socket描述符（socket descriptor），其本质是一个文件描述符，是一个整数。把它作为参数，通过它来进行一些读写操作。
 
@@ -254,7 +276,7 @@ d. socket类型的servaddr的地址，(struct sockaddr *)\&servaddr。
     socket字符：sockfd客户端，listenfd服务端；
 
     网络地址：clientaddr客户端，servaddr服务端；
-    \item 
+    \item 待添加
 
 \end{itemize}
 
@@ -272,9 +294,9 @@ struct hostent
 
 \qquad    int h\_addrtype; //主机IP地址的类型，AF\_INET（ipv4）、AF\_INET6（ipv6）
 
-\qquad    int h\_length;  //主机IP地址长度，IPV4地址为4，IPV6地址则为16。【常用】
+\qquad    int h\_length;  //主机IP地址长度，IPV4为4，IPV6为16。
 
-\qquad    char **h\_addr\_list;  //主机的ip地址，虽然为char形式，但以网络字节序格式存储，可以通过memcpy互相拷贝。若要打印出这个IP，需要调用inet\_ntoa()。【常用】
+\qquad    char **h\_addr\_list;  //主机的ip地址，虽然为char形式，但以网络字节序格式存储，可以通过memcpy互相拷贝。
 
 \};
 
@@ -284,6 +306,8 @@ a. 通常用于客户端已知对方ip情况下获得对方网络其他信息。
 b. 与下面的结构体一样，定义时指的是哪个端，其内数据就指哪个端。
 
 c. 具有预定义参数：\# define h\_addr  h\_addr\_list[0]
+
+d. \textcolor{red}{主要用于客户端存入端口和ip地址信息，然后通过h\_addr来将信息传递给网络地址结构体sin\_addr}。
 
 \paragraph{操作函数}~{}
 
@@ -348,33 +372,33 @@ struct in\_addr
 
     \item inet\_ntoa()：将网络二进制数字（网络字节序）转为十进制IP地址字符串。
     
-    (in\_addr---->const char)(network to ascii)
+    (\textcolor{red}{in\_addr}---->const char)(network to ascii)
 
-    \item inet\_aton()：将十进制IP地址字符串转为网络二进制数字（网络字节序），与inet\_addr的区别是，结果不是作为返回值，而是保存形参inp所指的in\_addr\_t结构体中。函数原型：int inet\_aton(cont char* cp, struct in\_addr\_t *inp)
+    \item inet\_aton()：将十进制IP地址字符串转为网络二进制数字（网络字节序），与inet\_addr的区别是，结果不是作为返回值，而是保存形参inp所指的in\_addr结构体中（前者需要保存到in\_addr\_t变量中）。
     
-    (const char----> in\_addr)(ascii to network)
+    函数原型：int inet\_aton(cont char* cp, struct in\_addr\_t *inp)
+    
+    (const char----> \textcolor{red}{in\_addr})(ascii to network)
 
-    \item htons()作用是将端口号由主机字节序转换为网络字节序的整数值。
+    \item htons()、htonl()作用是将端口号由主机字节序转换为网络字节序的整数值。前者针对的是16位的（short）、后者针对的是32位的（long）。
     
     (int to in\_addr\_t)(host to net)
     
     (不一定是in\_addr\_t，满足要求的字符即可，例如unit16\_t)
 
-    \item htonl()作用和htons()一样，不过它针对的是32位的（long），而htons()针对的是16位的（short）。
-    
-    (host to net)
-
     \item 与htonl()和htons()作用相反的两个函数是：ntohl()和ntohs()。
     
     (net to host)
     
-    \item 应用：服务端绑定(自身的)IP地址：
+    \item 应用：
+    
+    a. 服务端绑定(自身的)IP地址：
 
     servaddr.sin\_addr.s\_addr = \textcolor{red}{inet\_addr}("192.168.149.129");  // 指定ip地址  
     
     servaddr.sin\_addr.s\_addr = \textcolor{red}{htonl(INADDR\_ANY)};  // 本主机的任意ip地址。在实际开发中，采用任意ip地址的方式比较多。
 
-    \item 应用：服务端绑定通信端口，也可用于客户端指定服务端的通信端口：
+    b. 服务端绑定通信端口，也可用于客户端指定服务端的通信端口：
     
     servaddr.sin\_port = \textcolor{red}{htons}(5000);  // 通信端口5000
 
@@ -390,15 +414,18 @@ struct in\_addr
 
 以下为几种常用的接口函数：
 
-\subsubsection{socket()函数}
+\subsubsection{socket函数}
 
-功能：用于创建一个新的socket。对应于普通文件的打开操作。
+\paragraph{函数概述:}~{}
 
-返回值：成功则返回一个socket描述符，失败返回-1，错误原因存于errno 中。
+\begin{itemize}
+    \item 功能：用于创建一个新的socket。对应于普通文件的打开操作。
+    \item 返回值：成功则返回一个socket描述符，失败返回-1，错误原因存于errno 中。
+    \item 范围限制：客户端、服务端。
+    \item 注意：无。
+\end{itemize}
 
-使用范围：客户端、服务端。
-
-\paragraph{函数声明}~{}
+\paragraph{函数声明：}~{}
 
 int socket (int domain, int type, int protocol);
 
@@ -422,205 +449,320 @@ int socket (int domain, int type, int protocol);
     \item 正常情况，第一个参数只能填AF\_INET，第二个参数只能填SOCK\_STREAM，第三个参数只能填0。
 \end{itemize}
 
-使用：\textcolor{red}{int sockfd = socket(AF\_INET,SOCK\_STREAM,0))}
+使用示例：\textcolor{red}{int sockfd = socket(AF\_INET,SOCK\_STREAM,0))}
 
-\subsubsection{send()函数}
+\subsubsection{send函数}
 
-功能：把数据通过socket发送给对端。
+\paragraph{函数概述:}~{}
 
-返回值：函数返回已发送的字符数。出错时返回-1，错误信息errno被标记。
+\begin{itemize}
+    \item 功能：把数据通过socket发送给对端。
+    \item 返回值：函数返回已发送的字符数。出错时返回-1，错误信息errno被标记。
+    \item 范围限制：客户端、服务端。
+    \item 注意：就算是网络断开，或socket已被对端关闭，send函数不会立即报错，要过几秒才会报错。如果send函数返回的错误（<=0），表示通信链路已不可用。
+\end{itemize}
 
-适用范围：客户端、服务端。
-
-注意：就算是网络断开，或socket已被对端关闭，send函数不会立即报错，要过几秒才会报错。如果send函数返回的错误（<=0），表示通信链路已不可用。
-
-\paragraph{函数声明}~{}
+\paragraph{函数声明：}~{}
 
 ssize\_t send(int sockfd, const void *buf, size\_t len, int flags);
 
-sockfd：已建立好连接的\textcolor{red}{客户端}socket。\textcolor{red}{客户端接受数据：本机套接字！服务端接受数据：对方套接字！}
-
-buf：需发送数据的内存地址(指针就行)。
-
-len：需发送数据的长度，strlen()即可。
-
-flags：填0, 其他数值意义不大。
-
-\paragraph{附录}~{}
-
 \begin{itemize}
-    \item MSG\_CONFIRM ：用来告诉链路层。
-    \item MSG\_DONTROUTE：不要使用网关来发送数据，只发送到直接连接的主机上。通常只有诊断或者路由程序会使用，这只针对路由的协议族定义的，数据包的套接字没有。
-    \item MSG\_DONTWAIT ：启用非阻塞操作，如果操作阻塞，就返回EAGAIN或EWOULDBLOCK。
-    \item MSG\_EOR ：当支持SOCK\_SEQPACKET时，终止记录。
-    \item MSG\_MORE ：调用方有更多的数据要发送。这个标志与TCP或者udp套接字一起使用。
-    \item MSG\_NOSIGNAL ：当另一端中断连接时，请求不向流定向套接字上的错误发送SIGPIPE,EPIPE 错误仍然返回。
-    \item MSG\_OOB：在支持此概念的套接字上发送带外数据（例如，SOCK\_STREAM类型）；底层协议还必须支持带外数据。
+    \item sockfd：已建立好连接的\textcolor{red}{客户端}socket。
+    \item buf：需发送数据的内存地址。
+    \item len：需发送数据的长度。
+    \item flags：填0, 其他数值意义不大。
+    {
+        \begin{itemize}
+        \item MSG\_CONFIRM ：用来告诉链路层。
+        \item MSG\_DONTROUTE：不要使用网关来发送数据，只发送到直接连接的主机上。通常只有诊断或者路由程序会使用，这只针对路由的协议族定义的，数据包的套接字没有。
+        \item MSG\_DONTWAIT ：启用非阻塞操作，如果操作阻塞，就返回EAGAIN或EWOULDBLOCK。
+        \item MSG\_EOR ：当支持SOCK\_SEQPACKET时，终止记录。
+        \item MSG\_MORE ：调用方有更多的数据要发送。这个标志与TCP或者udp套接字一起使用。
+        \item MSG\_NOSIGNAL ：当另一端中断连接时，请求不向流定向套接字上的错误发送SIGPIPE,EPIPE 错误仍然返回。
+        \item MSG\_OOB：在支持此概念的套接字上发送带外数据（例如，SOCK\_STREAM类型）；底层协议还必须支持带外数据。
+    \end{itemize}
+
+    }
 \end{itemize}
 
-使用：\textcolor{red}{iret=send(sockfd,buffer,strlen(buffer),0);}
+使用示例：\textcolor{red}{iret=send(sockfd,buffer,strlen(buffer),0);}
 
-\subsubsection{recv()函数}
+\subsubsection{recv函数}
 
-功能：接收对方socket发送过来的数据。
+\paragraph{函数概述:}~{}
 
-返回值：函数返回已接收的字符数。出错时返回-1，失败时不会设置errno的值。
+\begin{itemize}
+    \item 功能：接收对方socket发送过来的数据。
+    \item 返回值：函数返回已接收的字符数。出错时返回-1，失败时不会设置errno的值。
+    \item 范围限制：客户端、服务端。
+    \item 注意：如果socket的对端没有发送数据，recv函数就会等待，如果对端发送了数据，函数返回接收到的字符数。出错时返回-1。如果socket被对端关闭，返回值为0。如果recv函数返回的错误（<=0），表示通信通道已不可用。
+\end{itemize}
 
-适用范围：客户端、服务端。
-
-注意：如果socket的对端没有发送数据，recv函数就会等待，如果对端发送了数据，函数返回接收到的字符数。出错时返回-1。如果socket被对端关闭，返回值为0。如果recv函数返回的错误（<=0），表示通信通道已不可用。
-
-\paragraph{函数声明}~{}
+\paragraph{函数声明：}~{}
 
 ssize\_t recv(int sockfd, void *buf, size\_t len, int flags);
 
-sockfd：为已建立好连接的\textcolor{red}{客户端}socket。\textcolor{red}{客户端发送数据：本机套接字！服务端回复数据：对方套接字！}
+\begin{itemize}
+    \item sockfd：为已建立好连接的\textcolor{red}{客户端}socket。
+    \item buf：用于接收数据的内存地址。
+    \item len：接收数据的长度，不能超过buf的大小，否则内存溢出。
+    \item flags：填0, 其他数值意义不大。同上。
+\end{itemize}
 
-buf：用于接收数据的内存地址。
-
-len：接收数据的长度，不能超过buf的大小，否则内存溢出。
-
-flags：填0, 其他数值意义不大。
-
-使用：\textcolor{red}{iret=recv(sockfd,buffer,sizeof(buffer),0);}
+使用示例：\textcolor{red}{iret=recv(sockfd,buffer,sizeof(buffer),0);}
 
 \subsubsection{gethostbyname()函数}
 
-功能：把ip地址或域名转换为hostent 结构体表达的地址。
+\paragraph{函数概述:}~{}
 
-返回值：如果成功，返回一个hostent结构指针，失败返回NULL。
+\begin{itemize}
+    \item 功能：把ip地址或域名转换为hostent 结构体表达的地址。
+    \item 返回值：如果成功，返回一个hostent结构指针，失败返回NULL。
+    \item 范围限制：客户端。
+    \item 注意：只要地址格式没错，一般不会返回错误。失败时不会设置errno的值。
+\end{itemize}
 
-适用范围：客户端。
-
-注意：只要地址格式没错，一般不会返回错误。失败时不会设置errno的值。
-
-\paragraph{函数声明}~{}
+\paragraph{函数声明：}~{}
 
 struct hostent *gethostbyname(const char *name);
 
-name：域名或者主机名，例如"192.168.1.3"、"www.freecplus.net"等。
+\begin{itemize}
+    \item name：域名或者主机名，例如"192.168.1.3"、"www.freecplus.net"等。
+\end{itemize}
 
-使用：\textcolor{red}{struct hostent *h = gethostbyname(argv[1])}
+使用示例：\textcolor{red}{struct hostent *h = gethostbyname(argv[1])}
 
-\subsubsection{connect()函数}
+\subsubsection{connect函数}
 
-功能：客户端通过调用connect函数来建立客户端socket与服务器的连接。
+\paragraph{函数概述:}~{}
 
-返回值：成功则返回0，失败返回-1，错误原因存于errno 中。
+\begin{itemize}
+    \item 功能：客户端通过调用connect函数来建立客户端socket与服务器的连接。
+    \item 返回值：成功则返回0，失败返回-1，错误原因存于errno 中。
+    \item 范围限制：客户端。
+    \item 注意：如果服务端的地址错了，或端口错了，或服务端没有启动，connect一定会失败。
+\end{itemize}
 
-适用范围：客户端。
-
-注意：如果服务端的地址错了，或端口错了，或服务端没有启动，connect一定会失败。
-
-\paragraph{函数声明}~{}
+\paragraph{函数声明：}~{}
 
 int connect(int sockfd, const struct sockaddr *addr, socklen\_t addrlen);
 
-sockfd：客户端的socket。
+\begin{itemize}
+    \item sockfd：客户端socket。
+    \item *addr：服务端的网络地址（注意\textcolor{red}{const struct sockaddr *类型，需要强制转换）}。
+    \item addrlen：服务端网络地址的长度（addr结构体的大小）。
+\end{itemize}
 
-*addr：服务端的网络地址。
+使用示例：\textcolor{red}{connect(sockfd, (struct sockaddr *)\&servaddr,sizeof(servaddr))}
 
-addrlen：服务端网络地址的长度（addr结构体的大小）。
+\subsubsection{bind函数}
 
-使用：\textcolor{red}{connect(sockfd, (struct sockaddr *)\&servaddr,sizeof(servaddr))}
+\paragraph{函数概述:}~{}
 
-\subsubsection{bind()函数}
+\begin{itemize}
+    \item 功能：服务端把自身用于通信的地址和端口绑定到socket上。
+    \item 返回值：成功则返回0，失败返回-1，错误原因存于errno 中。
+    \item 范围限制：服务端。
+    \item 注意：如果绑定的地址错误，或端口已被占用，bind函数一定会报错，否则一般不会返回错误。
+\end{itemize}
 
-功能：服务端把自身用于通信的地址和端口绑定到socket上。
-
-返回值：成功则返回0，失败返回-1，错误原因存于errno 中。
-
-适用范围：服务端。
-
-注意：如果绑定的地址错误，或端口已被占用，bind函数一定会报错，否则一般不会返回错误。
-
-\paragraph{函数声明}~{}
+\paragraph{函数声明：}~{}
 
 int bind(int sockfd, const struct sockaddr *addr, socklen\_t addrlen);
 
-sockfd：服务端socket。
+\begin{itemize}
+    \item sockfd：服务端socket。
+    \item *addr：服务端的网络地址。（\textcolor{red}{const struct sockaddr *类型的指针，需要使用强制类型转换}。指向要绑定给sockfd的协议地址。存放了服务端用于通信的地址和端口）。
+    \item addrlen：服务端网络地址的长度。
+\end{itemize}
 
-*addr：服务端的网络地址。（一个const struct sockaddr *指针，指向要绑定给sockfd的协议地址。存放了服务端用于通信的地址和端口。）
+使用示例：\textcolor{red}{bind(listenfd,(struct sockaddr *)\&servaddr,sizeof(servaddr))；}
 
-addrlen：服务端网络地址的长度。
+\subsubsection{listen函数}
 
-使用：\textcolor{red}{bind(listenfd,(struct sockaddr *)\&servaddr,sizeof(servaddr))；}
+\paragraph{函数概述:}~{}
 
-注意调用时参数使用强制类型转换。
+\begin{itemize}
+    \item 功能：用于把主动连接socket变为被动连接的socket，使得这个socket可以接受其它socket的连接请求，从而成为一个服务端的socket。调用之后，服务端的socket就可以调用accept来接受客户端的连接请求。
+    \item 返回值：0-成功， -1-失败，错误原因存于errno 中。
+    \item 范围限制：服务端。
+    \item 注意：listen函数一般不会返回错误。
+\end{itemize}
 
-\subsubsection{listen()函数}
-
-功能：用于把主动连接socket变为被动连接的socket，使得这个socket可以接受其它socket的连接请求，从而成为一个服务端的socket。 当调用listen之后，服务端的socket就可以调用accept来接受客户端的连接请求。
-
-返回值：0-成功， -1-失败，错误原因存于errno 中。
-
-listen函数一般不会返回错误。
-
-适用范围：服务端。
-
-\paragraph{函数声明}~{}
+\paragraph{函数声明：}~{}
 
 int listen(int sockfd, int backlog);
 
-sockfd：是服务端已经被bind过的socket。
+\begin{itemize}
+    \item sockfd：服务端已经被bind过的socket。
+    \item backlog：这个参数涉及到一些网络的细节，比较麻烦，填5、10都行，一般不超过30。
+\end{itemize}
 
-backlog：这个参数涉及到一些网络的细节，比较麻烦，填5、10都行，一般不超过30。
+使用示例：\textcolor{red}{listen(listenfd,5);}
 
-使用：\textcolor{red}{listen(listenfd,5);}
+\subsubsection{accept函数}
 
-\subsubsection{accept()函数}
+\paragraph{函数概述:}~{}
 
-功能：用于服务端接受客户端的连接。
+\begin{itemize}
+    \item 功能：用于服务端接受客户端的连接。
+    \item 返回值：成功则返回0，失败返回-1，错误原因存于errno 中。
+    \item 范围限制：服务端。
+    \item 注意：
+    \item 
+    a. 函数在等待的过程中，如果被中断或其它的原因，函数返回-1，表示失败，如果失败，可以重新accept。
 
-返回值：成功则返回0，失败返回-1，错误原因存于errno 中。
+    b. 函数等待客户端的连接，如果没有客户端连上来，它就一直等待，这种方式称之为阻塞。
 
-适用范围：服务端。
+    c. 函数等待到客户端的连接后，\textcolor{red}{创建一个新的socket，函数返回值就是这个新的socket，服务端使用这个新的socket和客户端进行报文的收发。}
 
-注意：
+\end{itemize}
 
-a. accept在等待的过程中，如果被中断或其它的原因，函数返回-1，表示失败，如果失败，可以重新accept。
-
-b. accept函数等待客户端的连接，如果没有客户端连上来，它就一直等待，这种方式称之为阻塞。
-
-c. accept等待到客户端的连接后，\textcolor{red}{创建一个新的socket，函数返回值就是这个新的socket，服务端使用这个新的socket和客户端进行报文的收发。}
-
-\paragraph{函数声明}~{}
+\paragraph{函数声明：}~{}
 
 int accept(int sockfd,struct sockaddr *addr,socklen\_t *addrlen);
 
-sockfd：服务端已经被listen过的socket。
+\begin{itemize}
+    \item sockfd：服务端已经被listen过的socket。
+    \item addr：客户端的网络地址（\textcolor{red}{const struct sockaddr *}）。如果不需要客户端的地址，可以填0。也可以先定义一个空的客户端地址，然后填进去。
+    \item addrlen：客户端网络地址长度，如果addr为0，addrlen也填0。
+\end{itemize}
 
-addr：客户端的网络地址（sockaddr）。如果不需要客户端的地址，可以填0。也可以先定义一个空的客户端地址，然后填进去。
+使用示例：\textcolor{red}{clientfd=accept(listenfd,(struct sockaddr *)\&clientaddr,(socklen\_t*)\&socklen);}
 
-addrlen：客户端网络地址长度，如果addr为0，addrlen也填0。
 
-使用：\textcolor{red}{clientfd=accept(listenfd,(struct sockaddr *)\&clientaddr,(socklen\_t*)\&socklen);}
 
-\subsubsection{附注：memset()函数}
 
-void *memset(void *str, int c, size\_t n)
 
-str -- 指向要填充的内存块。
+\subsubsection{附注：计算大小函数、运算符}
 
-c -- 要被设置的值。该值以 int 形式传递，但是函数在填充内存块时是使用该值的无符号字符形式。默认0。
+\paragraph{sizeof运算符}~{}
 
-n -- 大小，sizeof(str)。
+\begin{itemize}
+    \item 参数可以是数组、指针、类型、对象、函数等。
+    \item 功能是获得保证能容纳实现所建立的最大对象的字节大小。
+    \item 不能用来返回动态分配的内存空间的大小。
+    \item 返回值为int类型，大小与空间大小有关，跟对象、结构、数组所存储的内容没有关系。
+    \item \textcolor{red}{内容区分为指针时，指的是存储该指针所用的空间大小（存储该指针的地址的长度，是长整型，应该为4），而对于数组名字，则返回数组大小。}
+\end{itemize}
 
-注意：与malloc不同之处为后者未初始化。而new 返回指定类型的指针，并且可以自动计算所需要大小。
+\paragraph{strlen函数}~{}
 
-\subsubsection{附注：memcpy()函数}
+\begin{itemize}
+    \item 参数必须是字符型指针（char*）（数组名视为指针）。
+    \item 功能是返回字符串的长度。
+    \item 可以返回动态内存空间大小。
+    \item 返回值为int类型，大小与存储的数据内容有关，与空间的大小和类型无关。
+    \item 不区分内容是数组还是指针，就读到\\0为止返回长度。且不把\\0计入字符串的长度。
+\end{itemize}
 
-void *memcpy(void *str1, const void *str2, size\_t n)
+\subsubsection{附注：开辟空间函数、运算符}
 
-str1 -- 指向用于存储复制内容的目标数组，类型强制转换为 void* 指针。
+\paragraph{memset函数}~{}
 
-str2 -- 指向要复制的数据源，类型强制转换为 void* 指针。
+\begin{itemize}
+    \item 声明：void *memset(void *str, int c, size\_t n)
+    {
+    \begin{itemize}
+        \item str：指向要填充的内存块。
+        \item c ：为每个字节所赋的值。该值以 int 形式传递，但是函数在填充内存块时是使用该值的无符号字符形式。默认0。
+        \item n ：内存块大小，单位是字节。
+    \end{itemize}
+    }
+    \item 特点：
+    {
+    \begin{itemize}
+        \item 它是以字节为单位进行赋值的。
+        \item 用memset对非字符型数组赋初值是不可取的，因为初值并不是数字，而是对应的ASCII码，会造成初始数值改变。（0不受影响）
+        \item 可以说是初始化内存的“万能函数”，在统一赋值时比较适合。一般跟sizeof一起使用。
+        \item 通常是给数组或结构体进行初始化。一般的变量如 char、int、float、double 等类型的变量直接初始化即可，没有必要用 memset。
+    \end{itemize}
+    }
+    \item 使用示例：memset(str, 0, sizeof(str));
+\end{itemize}
 
-n -- 要被复制的字节数。
+\paragraph{malloc函数}~{}
 
-注意：支持不同类型数据的拷贝。不支持不定大小的数据拷贝。
+\begin{itemize}
+    \item 声明：extern void *malloc(unsigned int num\_bytes);
+    {
+    \begin{itemize}
+        \item num\_bytes：内存块大小。
+    \end{itemize}
+    }
+    \item 特点：
+    {
+    \begin{itemize}
+        \item 需要自己计算字节数。
+        \item 返回指向被分配内存空间的指针，本身无类型，需要强转成指定类型的指针。
+        \item 只管分配内存，不进行初始化，所以新内存中值是随机的。
+        \item 当内存不再使用的时候，应使用free()函数将内存块释放掉。申请后不释放就是内存泄露。一般跟sizeof一起使用。
+    \end{itemize}
+    }
+    \item 使用示例：p=(int*)malloc(sizeof(int)*128);
+\end{itemize}
 
-memcpy()用来拷贝src \textcolor{red}{所指的内存内容}前n个字节到dest所指的内存地址上。与strcpy()不同的是,memcpy()会完整的复制n个字节,不会因为遇到字符串结束'\\0'而结束。
+\paragraph{new运算符}~{}
+
+\begin{itemize}
+    \item 声明：无
+    \item 特点：
+    {
+    \begin{itemize}
+        \item new返回指定类型的指针。
+        \item new可以自动计算所需要的大小。
+        \item 会进行初始化。
+        \item 开辟新空间用。
+    \end{itemize}
+    }
+    \item 使用示例：p=new int;
+\end{itemize}
+
+
+
+\subsubsection{附注：字符串复制函数}
+
+\paragraph{memcpy函数}~{}
+
+\begin{itemize}
+    \item 声明：void *memcpy(void *str1, const void *str2, size\_t n)
+    {
+    \begin{itemize}
+        \item str1：指向用于存储复制内容的目标数组，类型强制转换为 void* 指针。
+        \item str2：指向要复制的数据源，类型强制转换为 void* 指针。
+        \item n：要被复制的字节数。
+    \end{itemize}
+    }
+    \item 特点：
+    {
+    \begin{itemize}
+        \item 可以用来拷贝任何数据类型的对象。
+        \item 可以指定拷贝的数据长度（n来指定）。
+        \item 会完整的复制n个字节,不会因为遇到字符串结束'\\0'而结束。
+    \end{itemize}
+    }
+    \item 使用示例：memcpy(b,a,sizeof(b)) -- （b<a）
+\end{itemize}
+
+\paragraph{strcpy函数}~{}
+
+\begin{itemize}
+    \item 声明：char* strcpy(char* dest, char* src)
+    {
+    \begin{itemize}
+        \item dest：待被复制的数组指针
+        \item str2：要复制的字符串。
+    \end{itemize}
+    }
+    \item 特点：
+    {
+    \begin{itemize}
+        \item 只用于字符串复制，并且它不仅复制字符串内容之外，还会复制字符串的结束符。
+        \item 复制过程遇到字符串结束'\\0'结束。
+    \end{itemize}
+    }
+    \item 使用示例：p=new int;
+\end{itemize}
 
 \subsubsection{附注：sprintf()函数}
 
@@ -657,6 +799,32 @@ format -- 这是字符串，包含了要被写入到字符串 str 的文本。�
 \end{itemize}
 
 \section{}
+
+
+
+
+\paragraph{函数概述:}~{}
+
+\begin{itemize}
+    \item 功能：
+    \item 返回值：
+    \item 范围限制：
+    \item 注意：
+\end{itemize}
+
+\paragraph{函数声明：}~{}
+
+
+
+\begin{itemize}
+    \item 
+\end{itemize}
+
+使用示例：
+
+
+
+
 
 
 
