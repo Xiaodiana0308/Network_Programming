@@ -71,6 +71,24 @@ fork表示：新的进程要通过老的进程复制自身得到，它是一个�
 
 注意：在Linux中，线程只是一种特殊的进程。多个线程之间可以共享内存空间和IO接口。所以，进程是Linux程序的唯一的实现方式。
 
+\subsection{Linux 线程}
+
+需要头文件：
+
+\#include <pthread.h> 
+
+CMakeList.txt中需要加入：来添加链接库。
+find\_package(Threads)
+
+target\_link\_libraries( … \${CMAKE\_THREAD\_LIBS\_INIT})
+
+\subsubsection{pthread\_create函数}
+
+int pthread\_create(pthread\_t *thread, const pthread\_attr\_t *attr,
+
+void *(*start\_routine)(void*), void *arg); 
+
+
 \subsection{Linux内存管理}
 
 了让有限的物理内存满足应用程序对内存的大需求量，Linux 采用了称为“虚拟内存”的内存管理方式。Linux 将内存划分为容易处理的“内存页”（对于大部分体系结构来说都是 4KB）。Linux 包括了管理可用内存的方式，以及物理和虚拟映射所使用的硬件机制。
@@ -600,7 +618,7 @@ str2 -- 指向要复制的数据源，类型强制转换为 void* 指针。
 
 n -- 要被复制的字节数。
 
-注意：支持不同类型数据的拷贝。支持不定大小的数据拷贝。
+注意：支持不同类型数据的拷贝。不支持不定大小的数据拷贝。
 
 memcpy()用来拷贝src \textcolor{red}{所指的内存内容}前n个字节到dest所指的内存地址上。与strcpy()不同的是,memcpy()会完整的复制n个字节,不会因为遇到字符串结束'\\0'而结束。
 
