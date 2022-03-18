@@ -197,8 +197,8 @@ int pthread\_attr\_init(pthread\_attr\_t *attr);
 \begin{itemize}
     \item 功能：销毁一个线程属性对象。删除初始化期间分配的存储空间。
     \item 返回值：0成功，非0失败。
-    \item 范围限制：
-    \item 注意：
+    \item 范围限制：主线程，join之后。
+    \item 注意：无。
 \end{itemize}
 
 \paragraph{函数声明：}~{}
@@ -559,7 +559,7 @@ int pthread\_setspecific(pthread\_key\_t key, const void *value);
     {
         \begin{itemize}
             \item key：句柄。
-            \item value：传入的值的指针，不需要强制类型转换，不需要常量，类型thread\_data\_t *。
+            \item value：需要采用本地存储区的值的指针，不需要强制类型转换，不需要常量，类型thread\_data\_t *。
         \end{itemize}
     }
 \end{itemize}
@@ -591,9 +591,11 @@ Linux提供的线程同步机制主要有互斥锁和条件变量。
     
     A：pthread\_mutex\_t *restrict mutex：指向互斥量的指针，类型为pthread\_mutex\_t，传入地址。
 
+    pthread\_mutex\_t mutex = PTHREAD\_MUTEX\_INITIALIZER;//定义
+
     B：const pthread\_mutexattr\_t *restrict attr：指向互斥量属性的指针，NULL即可。
 
-    \item pthead\_mutex\_destroy(A) //销毁互斥锁[主函数]
+    \item pthread\_mutex\_destroy(A) //销毁互斥锁[主函数]
     \item pthread\_mutex\_lock(A) //互斥锁获得锁[子线程]
     \item pthread\_mutex\_trylock(A) //尝试获得锁[子线程]
 
@@ -601,7 +603,7 @@ Linux提供的线程同步机制主要有互斥锁和条件变量。
 
     用它试图加锁的线程永远都不会被系统暂停，只是通过返回EBUSY来告诉程序员这个锁已经有人用了。至于是否继续“强闯”临界区，则由程序员决定。
 
-    \item pthread\_mutex\_unlock(A) //互斥释放解锁[子线程]
+    \item pthread\_mutex\_unlock(A) //释放互斥锁[子线程]
 \end{itemize}
 
 \paragraph{注意事项}~{}
@@ -632,9 +634,11 @@ Linux提供的线程同步机制主要有互斥锁和条件变量。
     
     C：pthread\_cond\_t *cond：是一个指向条件变量的指针，类型为pthread\_cond\_t，传入地址。
 
+    pthread\_cond\_t has\_producer = PTHREAD\_COND\_INITIALIZER;//定义
+
     D：const pthread\_condattr\_t *attr：是一个指向条件变量属性的指针，NULL即可。
 
-    \item pthread\_cond\_destory(C) //销毁条件变量的接口[主函数]
+    \item pthread\_cond\_destory(C) //销毁条件变量的接口，非释放内存空间[主函数]
     \item pthread\_cond\_signal(C) //控制“事件”发生的接口，激活等待列表中的线程，即广播形式[子线程]
     \item pthread\_cond\_broadcast(C) //控制“事件”发生的接口，激活所有等待线程列表中最先入队的线程，即单播形式[子线程]
     \item pthead\_cond\_wait(C,A) //等待“事件”发生的接口，即等待条件变量，挂起线程，没有信号就一直等待[子线程]
@@ -644,32 +648,75 @@ Linux提供的线程同步机制主要有互斥锁和条件变量。
 
 \end{itemize}
 
+\paragraph{注意事项}~{}
+
+\begin{itemize}
+    \item 函数pthead\_cond\_wait的工作流程为：对于一个已经成功锁定了的进程，首先将本线程休眠，放在等待队列（称为阻塞）；然后对本线程的互斥量解锁，接着等待别的线程的解锁信号后去竞争锁（称为唤醒），继续执行线程。（解锁并阻塞是一个原子操作）
+    \item 解锁信号：另一个占据了该互斥量的线程在完成了对全局变量的操作后，执行解锁，然后调用thread\_cond\_broadcast或pthread\_cond\_signal函数（广播）。
+    \item 但由于解锁信号对应的情况下并不一定与唤起该线程的情况相同，则往往在调用pthead\_cond\_wait时会加入一个额外的判断来确定是否还需要等待。
+    \item 判断可以采用if的形式，也可以采用while的形式。前者在总计只有2个线程的情况下与后者相同。否则前者在下次竞争不到锁的时候就会继续执行线程的操作，而后者则会一直等待下去。
+    \item 先发解锁信号再解锁。避免有线程在收到信号前恰好获得锁。
+\end{itemize}
+
 \paragraph{与互斥锁关系}~{}
 
 \begin{itemize}
-    \item 与互斥锁同时采用，可用于共享的全局变量数据，
+    \item 与互斥锁同时采用，可用于让线程按一定的顺序来操作全局变量数据。即一个线程用互斥锁锁住了某一个操作过程，但如果全局变量不满足条件变量的要求，则会解锁该操作规程，让其他线程来操作。当满足要求时，再锁住操作过程执行。
+    \item pthread\_cond\_wait与thread\_mutex\_lock连用，在线程通过后者获得锁后，如果不满足条件，则调用前者释放锁，并将本线程放在线程等待队列之后。
+    \item 额外的解锁条件需要自己编写。
 \end{itemize}
 
-\subsubsection{线程本地存储}
 
-\paragraph{函数概述:}~{}
+
+\subsubsection{基本流程}
+
+提前需定义的参数：
 
 \begin{itemize}
-    \item 功能：
-    \item 返回值：
-    \item 范围限制：
-    \item 注意：
+    \item pthread\_t  //线程对象
+    \item pthread\_attr\_t  //线程属性对象
+    \item pthread\_key\_t  //本地存储区键
+    \item pthread\_mutex\_t mutex = PTHREAD\_MUTEX\_INITIALIZER;  //互斥锁对象
+    \item pthread\_cond\_t  cond  = PTHREAD\_COND\_INITIALIZER;  //条件变量对象
 \end{itemize}
 
-\paragraph{函数声明：}~{}
-
-
+主线程：
 
 \begin{itemize}
-    \item 
+    \item pthread\_attr\_init  //初始化线程属性
+    \item pthread\_attr\_setdetachstate //设置分离属性，无join、detach
+    \item pthread\_attr\_setscope //设置绑定属性
+    \item pthread\_attr\_setschedpolicy //设置调度属性 (算法)
+    \item pthread\_attr\_setschedparam //设置调度属性 (优先级)
+    \item pthread\_attr\_setinheritsched //设置调度属性 (继承权)
+    \item pthread\_attr\_setstacksize //设置作用域属性
+    \item pthread\_attr\_setguardsize //设置满栈警戒区属性
+    \item pthread\_key\_create //创建线程本地存储区
+    \item pthread\_key\_delete //回收线程本地存储区
+    \item pthread\_mutex\_init //初始化互斥锁
+    \item pthread\_cond\_init //初始化条件变量
+    \item pthread\_create //创建线程
+    \item pthread\_join  //调用回收线程
+    \item pthread\_mutex\_destroy //销毁互斥锁
+    \item pthread\_cond\_destory //销毁条件变量
+    \item pthread\_attr\_destroy  //销毁线程
 \end{itemize}
 
-使用示例：
+子线程：
+
+\begin{itemize}
+    \item pthread\_detach //自动回收，无join
+    \item pthread\_setspecific //设置线程本地存储区的数据
+    \item pthread\_getspecific //获取线程本地存储区的数据
+    \item pthread\_mutex\_lock //互斥锁获得锁
+    \item pthead\_cond\_wait //等待条件变量，挂起线程
+    \item 公共操作
+    \item pthread\_cond\_signal 或 pthread\_cond\_broadcast 释放解锁信号广播/单播
+    \item pthread\_mutex\_unlock //释放互斥锁
+\end{itemize}
+
+
+
 
 \subsection{Linux内存管理}
 
