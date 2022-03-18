@@ -169,7 +169,7 @@ void *(*start\_routine)(void*), void *arg);
 
 使用示例： ret = pthread\_create( \&th, NULL, thread, \&arg );  
 
-\subsubsection{pthread\_attr\_init函数---初始化属性}
+\subsubsection{pthread\_attr\_init函数---属性的初始化}
 
 \paragraph{函数概述:}~{}
 
@@ -190,7 +190,7 @@ int pthread\_attr\_init(pthread\_attr\_t *attr);
 
 使用示例：pthread\_attr\_init(\&attr);
 
-\subsubsection{pthread\_attr\_destroy函数---销毁属性}
+\subsubsection{pthread\_attr\_destroy函数---属性的销毁}
 
 \paragraph{函数概述:}~{}
 
@@ -661,12 +661,10 @@ Linux提供的线程同步机制主要有互斥锁和条件变量。
 \paragraph{与互斥锁关系}~{}
 
 \begin{itemize}
-    \item 与互斥锁同时采用，可用于让线程按一定的顺序来操作全局变量数据。即一个线程用互斥锁锁住了某一个操作过程，但如果全局变量不满足条件变量的要求，则会解锁该操作规程，让其他线程来操作。当满足要求时，再锁住操作过程执行。
+    \item 与互斥锁同时采用，可用于让线程按一定的顺序来操作全局变量数据。即一个线程用互斥锁锁住了某一个操作过程，但如果全局变量不满足条件变量的要求，则会解锁该操作规程，让其他线程来操作。当满足要求时，再锁住操作过程执行。（在此期间一直处于临界区）
     \item pthread\_cond\_wait与thread\_mutex\_lock连用，在线程通过后者获得锁后，如果不满足条件，则调用前者释放锁，并将本线程放在线程等待队列之后。
     \item 额外的解锁条件需要自己编写。
 \end{itemize}
-
-
 
 \subsubsection{基本流程}
 
@@ -714,9 +712,6 @@ Linux提供的线程同步机制主要有互斥锁和条件变量。
     \item pthread\_cond\_signal 或 pthread\_cond\_broadcast 释放解锁信号广播/单播
     \item pthread\_mutex\_unlock //释放互斥锁
 \end{itemize}
-
-
-
 
 \subsection{Linux内存管理}
 
